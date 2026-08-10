@@ -1,0 +1,27 @@
+cff-version: 1.2.0
+message: "If you use mcp-daemon-diet in research or software, please cite it as below."
+title: "mcp-daemon-diet"
+type: software
+authors:
+  - family-names: Dziatkovskii
+    given-names: Anton
+    orcid: "https://orcid.org/0000-0001-7408-3054"
+    affiliation: "Palo Alto AI Research Lab"
+repository-code: "https://github.com/tonydzi/mcp-daemon-diet"
+url: "https://github.com/tonydzi/mcp-daemon-diet"
+license: MIT
+abstract: >-
+  One shared MCP daemon per machine instead of a stdio copy in every agent session.
+  Server-agnostic and client-agnostic: the recipe, launcher and autostart templates for
+  Windows, macOS and Linux (none requiring admin), a watchdog built not to make things
+  worse, two measurement scripts that report copy counts and memory before and after, a
+  verifier that proves both that the config is off stdio and that the daemon answers, and
+  thirteen dated production failures with their fixes. Stdlib-only Python. States plainly
+  what it does not do: it saves processes, sockets and locks, not tokens.
+keywords:
+  - mcp
+  - model-context-protocol
+  - daemon
+  - sse
+  - devops
+  - agent-tooling
