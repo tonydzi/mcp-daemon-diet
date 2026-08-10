@@ -1,0 +1,11 @@
+# Windows batch launchers MUST arrive with CRLF: cmd.exe fails line-by-line on LF files
+# and the daemon never starts, with an empty log as the only symptom (docs/GOTCHAS.md #5).
+*.cmd text eol=crlf
+*.bat text eol=crlf
+# PowerShell 5.1 is happier with CRLF too, and the watchdog is edited on Windows anyway.
+*.ps1 text eol=crlf
+# Patch files must survive byte-for-byte or `git apply` rejects them on a Windows clone.
+*.patch -text
+*.diff -text
+# Everything else: normalise to LF in the repo.
+* text=auto

@@ -1,0 +1,42 @@
+# One shared MCP daemon as a user service (no root, no system unit).
+#
+# Install:
+#   mkdir -p ~/.config/systemd/user && cp mcp-telegram.service ~/.config/systemd/user/
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now mcp-telegram
+#   loginctl enable-linger "$USER"      # keeps it running when you are not logged in
+# Inspect:
+#   systemctl --user status mcp-telegram
+#   journalctl --user -u mcp-telegram -f
+#
+# WATCHDOG: Restart=on-failure below covers what a watchdog script would do, so on Linux
+# do not write one. Know the cost though -- a restart kills the HTTP/SSE stream of every
+# live client session and those sessions stay broken (`-32602 Invalid request parameters`)
+# until restarted by hand. RestartSec is deliberately unhurried for that reason.
+
+[Unit]
+Description=Shared MCP daemon (telegram) for all local agent sessions
+After=network-online.target
+
+[Service]
+Type=simple
+# edit: absolute paths; systemd gives you no shell expansion beyond %h (your home).
+ExecStart=%h/mcp/telegram-mcp/.venv/bin/python %h/mcp/telegram-mcp/main.py %h/mcp/media
+
+Environment=MCP_TRANSPORT=sse
+Environment=MCP_HOST=127.0.0.1
+Environment=MCP_PORT=8765
+Environment=PYTHONUNBUFFERED=1
+# Secrets: keep them in a file readable only by you, not in this unit -- `systemctl show`
+# prints Environment= lines to anyone who can query the service.
+EnvironmentFile=-%h/.mcp-secrets/telegram.env
+
+Restart=on-failure
+RestartSec=30
+
+# Cheap hardening: the daemon speaks to localhost and its own data directory only.
+NoNewPrivileges=yes
+PrivateTmp=yes
+
+[Install]
+WantedBy=default.target

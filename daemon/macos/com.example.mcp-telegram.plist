@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  One shared MCP daemon on macOS, started at login and kept alive by launchd.
+
+  Install:
+    cp com.example.mcp-telegram.plist ~/Library/LaunchAgents/
+    launchctl load -w ~/Library/LaunchAgents/com.example.mcp-telegram.plist
+  Check / stop:
+    launchctl list | grep mcp-telegram
+    launchctl unload -w ~/Library/LaunchAgents/com.example.mcp-telegram.plist
+
+  NOTE ON WATCHDOGS: KeepAlive below already restarts the daemon if it exits, so on macOS
+  you usually need no watchdog script at all. But understand what you switched on: a
+  restart severs the HTTP/SSE stream of every live client session, and those sessions do
+  not recover; they answer "-32602 Invalid request parameters" until restarted by hand.
+  (Note for editors: a double hyphen is illegal inside an XML comment, which is why the
+  prose here avoids it. A plist that will not parse fails at load time, silently.)
+  KeepAlive is right for a daemon that crashes rarely. If yours flaps, fix the flapping
+  instead of letting launchd restart it in a loop under your working sessions.
+
+  SECRETS: EnvironmentVariables below is readable by anything that can read your process
+  list. Prefer a secrets file the launcher script sources; see the Windows launcher for
+  that pattern.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.example.mcp-telegram</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <!-- edit: absolute paths, launchd has no shell and no PATH of yours -->
+        <string>/opt/mcp/telegram-mcp/.venv/bin/python</string>
+        <string>/opt/mcp/telegram-mcp/main.py</string>
+        <string>/opt/mcp/media</string>
+    </array>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>MCP_TRANSPORT</key><string>sse</string>
+        <key>MCP_HOST</key><string>127.0.0.1</string>
+        <key>MCP_PORT</key><string>8765</string>
+        <key>PYTHONUNBUFFERED</key><string>1</string>
+    </dict>
+
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <!-- Do not hammer a broken daemon; 30s between restart attempts. -->
+    <key>ThrottleInterval</key>
+    <integer>30</integer>
+
+    <key>StandardOutPath</key>
+    <string>/tmp/mcp-telegram.log</string>
+    <key>StandardErrorPath</key>
+    <string>/tmp/mcp-telegram.log</string>
+</dict>
+</plist>
