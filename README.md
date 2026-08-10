@@ -115,3 +115,8 @@ This project is built by a human + AI team, and the git log says so: Claude writ
 the code, Codex and Grok review it, Gemini feeds the research. Each is credited on a commit
 **only if its output changed that commit's content** — no decorative credits. Lab-wide
 policy, one source for every repo: [AI-CONTRIBUTORS.md](https://github.com/tonydzi/.github/blob/main/AI-CONTRIBUTORS.md).
+
+One finding in this repo came from exactly that: an external reviewer spotted that a
+marker built from an interpreter name (`"command": "node"`) made `mcp_diet_measure.py`
+count every unrelated node process as a duplicate of that server. Fixed before the first
+release, and the regression is locked into the test suite.
