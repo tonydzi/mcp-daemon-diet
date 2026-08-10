@@ -89,7 +89,9 @@ MIT. Templates are meant to be copied, edited and shipped without asking.
 ---
 
 Part of the connector kit series: [telegram-mcp-kit](https://github.com/tonydzi/telegram-mcp-kit),
-[whatsapp-mcp-kit](https://github.com/tonydzi/whatsapp-mcp-kit), **mcp-daemon-diet**.
+[whatsapp-mcp-kit](https://github.com/tonydzi/whatsapp-mcp-kit), **mcp-daemon-diet**,
+[agent-approval-gate](https://github.com/tonydzi/agent-approval-gate) (what the agent does
+when it needs a human's OK and nobody is at the terminal).
 Broken step, or a gotcha we are missing? Open an issue - we answer within 24h.
 
 ---
