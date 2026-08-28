@@ -7,7 +7,7 @@ it is the recipe, the launcher and autostart templates for all three operating s
 watchdog that will not make things worse, two measurement scripts, and thirteen gotchas we
 paid for in production.
 
-Built and run at [Palo Alto AI Research Lab](https://github.com/tonydzi/Palo-Alto-AI-Research-Lab),
+Built and run at [Palo Alto AI Research Lab](https://github.com/tonydzi/tonydzi),
 where a fleet of Claude sessions across five machines talks to its MCP servers through
 exactly this setup.
 
