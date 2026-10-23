@@ -188,6 +188,16 @@ def test_measure():
           servers.get("telegram") and servers["telegram"][0][0] == 8, sorted(servers))
     check("a port-identified process is not also counted as blind", blind == 0, blind)
 
+    # Electron/Chromium children carry the host app's whole flag list, and that list can
+    # contain a word like "mcp" (found 2026-10-23 on a box with a desktop agent app open:
+    # 40 GPU and renderer processes were reported as "40 copies" of one MCP server).
+    chromium = [(20 + i, "App.exe", 10 ** 8,
+                 "App.exe --type=%s --enable-features=McpWebSupport --mcp-bridge" % t)
+                for i, t in enumerate(("gpu-process", "renderer", "utility", "crashpad-handler"))]
+    servers, wrappers, _ = measure.collect(chromium, markers={}, owners={})
+    check("Chromium child processes are not counted as MCP servers",
+          not servers and not wrappers, {k: len(v) for k, v in servers.items()})
+
     # config markers name a server the heuristic would have called something else
     servers, _, _ = measure.collect(FAKE, markers={"index.js": "n8n"}, owners={})
     check("config marker overrides the guessed key", "n8n" in servers, sorted(servers))

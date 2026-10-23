@@ -54,6 +54,10 @@ SKIP_SELF = re.compile(r"mcp_diet_(?:measure|verify)", re.I)
 CLIENT_RE = re.compile(r"--strict-mcp-config|--mcp-config\b|mcp__|mcpPersistent"
                        r"|claude-code[\\/]|@anthropic-ai[\\/]claude-code"
                        r"|--permission-prompt-tool", re.I)
+# Electron/Chromium children (GPU, renderer, utility ...) repeat the host app's flag list on
+# every command line; a flag containing "mcp" made 40 of them look like one MCP server.
+CHROMIUM_CHILD_RE = re.compile(r"\s--type=(?:gpu-process|renderer|utility|zygote|crashpad-handler"
+                               r"|gpu|broker|ppapi)\b", re.I)
 # `@scope/pkg-mcp`, `pkg-mcp-server`, `mcp-server-pkg` ... the token that names the server.
 PKG_RE = re.compile(r"(?:@[\w.-]+/)?[\w.-]*mcp[\w.-]*", re.I)
 NOISE_TOKENS = {"mcp", "mcp.json", "mcpservers", ".mcp", "mcp.py", "mcp.js",
@@ -304,7 +308,8 @@ def collect(procs, markers=None, owners=None):
             blind += 1
             continue
         low = cmdline.lower()
-        if SKIP_SELF.search(cmdline) or CLIENT_RE.search(cmdline):
+        if (SKIP_SELF.search(cmdline) or CLIENT_RE.search(cmdline)
+                or CHROMIUM_CHILD_RE.search(cmdline)):
             continue
         hit = next((srv for mark, srv in markers.items() if mark in low), None)
         if hit is None and "mcp" not in low:
