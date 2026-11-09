@@ -76,6 +76,32 @@ Ours probes twice, logs a false alarm instead of acting on it, records evidence 
 touches anything, and refuses to restart a daemon that is merely mute. Read its header
 before you edit it. Full story: [GOTCHAS #1](docs/GOTCHAS.md).
 
+## Cleaning up the orphans agents leave behind
+
+Per-session stdio servers are half the leak. The other half: an agent CLI times out, its wrapper
+dies, and the `node -> codex` tree or a `grep -r` it spawned keeps running with nobody to read
+the output. We once counted 79 codex, 253 node and 57 bun orphans on one box.
+
+"Parent is dead, kill the child" is the obvious fix and it is wrong. PIDs get reused (on Windows
+a stale PPID points at whoever got that number next), services legitimately outlive their
+launcher, and git, ssh and backup jobs look exactly like orphans. Each of those mistakes has cost
+us something: a crashed desktop app, our own shared MCP daemon, a git pack, live SSH sessions.
+
+[`scripts/orphan_reaper.py`](scripts/orphan_reaper.py) kills only a tree it can prove was
+abandoned: identity is PID plus start time and is re-checked at the signal, the tree walk follows
+only true children, it looks twice with a grace period, zombies are reported with the parent that
+is not reaping them (never "killed"), and listeners, git, ssh, rsync and backup tools are off
+limits even as descendants.
+
+```bash
+pip install psutil
+python scripts/orphan_reaper.py                                  # dry run
+python scripts/orphan_reaper.py --apply --protect-port 8765      # protect your shared daemon
+python scripts/_test_orphan_reaper.py                            # fixtures + a live orphan tree on Windows
+```
+
+Run one automatic reaper per machine. Two patrols racing each other is how it goes wrong.
+
 ## What this does not do
 
 It does not save tokens. Context cost comes from tool schemas, which the client sends
