@@ -74,6 +74,10 @@ def snapshot():
                 i["pgid"] = os.getpgid(i["pid"])
             except Exception:
                 i["pgid"] = None
+            try:
+                i["sid"] = os.getsid(i["pid"])
+            except Exception:
+                i["sid"] = None
     return procs
 
 
@@ -87,8 +91,11 @@ def is_orphan(i, procs):
         return i["ppid"] != 0 and (par is None or not true_child(i, par))
     if i["ppid"] != 1:
         return False
-    pg = i.get("pgid")
-    return pg is not None and pg != i["pid"] and pg not in procs  # group leader is dead
+    pg, sid = i.get("pgid"), i.get("sid")
+    # double-fork daemon: setsid() then fork, the session leader exits on purpose -> its session
+    # leader is dead too. An abandoned agent child still sits in a live terminal/app session.
+    return (pg is not None and pg != i["pid"] and pg not in procs
+            and sid is not None and sid in procs)
 
 
 def protected_ids(procs):

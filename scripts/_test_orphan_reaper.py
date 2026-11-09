@@ -23,9 +23,10 @@ class FakeProc:
     def create_time(s): return s._ct
 
 
-def P(pid, ppid, name, ct, cmd="", status="running", pgid=None):
+def P(pid, ppid, name, ct, cmd="", status="running", pgid=None, sid=1):
+    # sid=1: the session leader (pid 1 fixture) is alive, i.e. an agent's terminal/app session
     return pid, {"pid": pid, "ppid": ppid, "name": name, "cmd": cmd, "cmdline": cmd.split(),
-                 "create_time": ct, "status": status, "pgid": pgid, "proc": FakeProc(pid, ct)}
+                 "create_time": ct, "status": status, "pgid": pgid, "sid": sid, "proc": FakeProc(pid, ct)}
 
 
 now = time.time()
@@ -55,6 +56,10 @@ check("U2 abandoned group and its child are targets", 41 in kill and 42 in kill,
 check("U3 live group leader = not an orphan", 43 not in kill, kill)
 check("U4 zombie is not a target, its parent is named", 61 not in kill and any(z["parent"] == 60 for z in zombies), zombies)
 check("U5 zombie's parent untouched", 60 not in kill, kill)
+# double-fork daemon: setsid() + fork, session leader 70 exited on purpose -> sid points to a dead leader
+procs = dict([P(1, 0, "launchd", now - 9*H, pgid=1),
+              P(71, 1, "node", now - 2*H, cmd="node daemon.js", pgid=70, sid=70)])
+check("U6 double-fork daemon (dead session leader) untouched", 71 not in R.plan(procs, 60, 5, now=now)[0])
 
 if os.name == "nt":
     R.WIN = True
