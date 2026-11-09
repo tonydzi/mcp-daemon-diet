@@ -102,6 +102,13 @@ python scripts/_test_orphan_reaper.py                            # fixtures + a 
 
 Run one automatic reaper per machine. Two patrols racing each other is how it goes wrong.
 
+Known limits, found by cross-model review before release:
+- Linux subreapers (`systemd --user`, container shims, tmux) adopt orphans, so their PPID never
+  becomes 1 and the Unix test does not fire. Such orphans are missed, not killed.
+- A deliberate `nohup job &` started from a non-interactive shell shares the dead shell's process
+  group and looks abandoned. If you run long jobs that way, list them with `--protect-cmd`.
+- A tree that still holds a live git process waits until git finishes. That is on purpose.
+
 ## What this does not do
 
 It does not save tokens. Context cost comes from tool schemas, which the client sends
