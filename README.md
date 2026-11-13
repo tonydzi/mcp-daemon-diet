@@ -1,5 +1,69 @@
 # mcp-daemon-diet
 
+Stops your AI tools from starting a separate copy of every MCP server in every session, so your computer stops running out of memory.
+
+**Who it's for:** people who run several Claude Code, Codex or other agent sessions at once and see the laptop slow down.
+**What you get:** one shared background copy of each server per machine, and scripts that measure the before and after.
+
+## Quick start
+1. Download the repo: `git clone https://github.com/tonydzi/mcp-daemon-diet` and open the folder.
+2. Measure first: `python scripts/mcp_diet_measure.py`. If every server shows `copies 1`, you are done, nothing to fix.
+3. If one server shows many copies, ask your AI agent to convert it (prompt below). Do not edit configs by hand.
+
+**Done when:** `python scripts/mcp_diet_verify.py --servers <name>` exits `0` and the measure table shows `copies 1` for that server.
+
+> Want an AI agent to do it for you? Paste this to Claude Code / Codex / Cursor:
+> "Read the 'For AI agents' section of https://github.com/tonydzi/mcp-daemon-diet and set it up for me."
+
+## For AI agents
+
+### Preconditions
+- Python 3 (the measure and verify scripts are standard library only) and permission to run shell commands. No admin rights are needed for the autostart templates.
+- `pip install psutil` is needed only for `scripts/orphan_reaper.py`.
+- Read access to the human's MCP client config (`~/.claude.json`, Claude Desktop config, or whatever client they use).
+- Ask the human, before changing anything: does any candidate server hold a credential or a logged-in account (Telegram, WhatsApp, a database)? A daemon is reachable by every local process and stays alive after sessions close (`docs/SECURITY.md`). For sensitive ones, skip or add a bearer token.
+
+### Install
+Nothing to install. Clone the repo and follow `PROMPT.md` step by step. It is the full procedure for an agent.
+```bash
+git clone https://github.com/tonydzi/mcp-daemon-diet
+cd mcp-daemon-diet
+python scripts/mcp_diet_measure.py          # step 0: measure; stop here if all copies are 1
+```
+Then, for each multi-copy server: find its HTTP mode from its own `--help` or README (never invent flags), pick a fixed local port, copy the launcher template for the OS from `daemon/windows`, `daemon/macos` or `daemon/linux`, set up login-time autostart, and repoint the client config to `{"type":"sse"|"http","url":"http://127.0.0.1:PORT/PATH"}`. `docs/RECIPE.md` is the server-agnostic recipe.
+
+### Configure
+- Bind every daemon to `127.0.0.1` only, one fixed port per server.
+- Secrets for a launcher come from a file outside any synced or committed folder, supplied by the human. Never inline them.
+- Windows launchers must be saved with CRLF line endings, or `cmd.exe` fails silently.
+- Autostart without admin: Windows HKCU `Run` key, macOS launchd agent (`RunAtLoad` and `KeepAlive`), Linux `systemd --user` with `loginctl enable-linger`.
+- Windows watchdog: schedule `daemon/windows/watchdog.ps1` every 30 minutes after filling its `$Daemons` table. On macOS and Linux the OS restart policy is enough, add no script.
+- Back up the client config first and tell the human where the backup is.
+
+### Verify
+```bash
+python scripts/mcp_diet_verify.py --servers <names you converted>
+python scripts/mcp_diet_measure.py
+python scripts/_test_mcp_diet.py
+```
+Expected: `mcp_diet_verify.py` exits `0` (config is off stdio and the daemon answers). The measure table shows `copies 1` for each converted server (sessions that were already open keep old copies until they exit). `_test_mcp_diet.py` ends with `ALL GREEN` and exits `0` (checked on this repo). Then restart one session and call one real tool from each converted server.
+
+### Uninstall / rollback
+- Restore the client config from the backup you made.
+- Remove the autostart entry you created (HKCU Run value, launchd plist, or `systemd --user` unit) and stop the daemon.
+- Remove the `watchdog.ps1` scheduled task if you added it.
+- Restarting a live daemon cuts off every open session until each is restarted, so do the rollback when no important session is running.
+
+### Rules for the agent
+- Do not convert anything "for later". If the measure shows one copy, stop.
+- Never simplify the watchdog to "port dead, then restart". A restart makes every live session answer `-32602 Invalid request parameters` until restarted by hand.
+- `scripts/orphan_reaper.py` is a dry run by default. Run `--apply` only if the human asks, and pass `--protect-port <daemon port>` so it never kills the shared daemon. Run one reaper per machine.
+- Do not kill processes by name or by parent id yourself. That is the mistake the reaper is built to avoid.
+- Add the daemons to any existing orphan reaper's allow-list. A daemon has no parent session and looks like an orphan.
+- This kit saves memory and processes, not tokens. Do not promise token savings.
+
+## Details
+
 **One shared MCP daemon per machine, instead of a copy in every agent session.**
 
 Works with any MCP server and any MCP client. Nothing here is specific to one integration -
