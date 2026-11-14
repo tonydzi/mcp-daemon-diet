@@ -46,7 +46,7 @@ python scripts/mcp_diet_verify.py --servers <names you converted>
 python scripts/mcp_diet_measure.py
 python scripts/_test_mcp_diet.py
 ```
-Expected: `mcp_diet_verify.py` exits `0` (config is off stdio and the daemon answers). The measure table shows `copies 1` for each converted server (sessions that were already open keep old copies until they exit). `_test_mcp_diet.py` ends with `ALL GREEN` and exits `0` (checked on this repo). Then restart one session and call one real tool from each converted server.
+Always pass `--servers`: without it nothing is required to be off stdio, so a config that is still all stdio also prints `OK` and exits `0`, which proves nothing. With `--servers`, a name that is still stdio, missing from the config, or whose daemon does not answer gives a `FAIL:` line and exit `1`. Expected: `mcp_diet_verify.py` exits `0` (config is off stdio and the daemon answers). The measure table shows `copies 1` for each converted server (sessions that were already open keep old copies until they exit). The measure script always exits `0`, even when it finds nothing; if it prints `No MCP server processes found`, you have not measured anything, so check the names or run it with `--all`. `_test_mcp_diet.py` ends with `ALL GREEN` and exits `0` (checked on this repo). Then restart one session and call one real tool from each converted server.
 
 ### Uninstall / rollback
 - Restore the client config from the backup you made.
